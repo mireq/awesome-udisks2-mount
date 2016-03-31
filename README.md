@@ -1,5 +1,10 @@
 # Automounter for awesome wm
 
+## Usage
+
+- Left click - mount
+- Right click - unmount
+
 ## Configuration
 
 rc.lua:
