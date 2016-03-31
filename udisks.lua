@@ -47,7 +47,7 @@ local function mount_device(device)
 
 	if module.filemanager == nil then
 	else
-		awful.util.spawn_with_shell(module.filemanager .. ' ' .. device.Mounted);
+		awful.util.spawn_with_shell(module.filemanager .. ' "' .. device.Mounted .. '"');
 	end
 end
 
@@ -81,12 +81,16 @@ end
 local function parse_block_devices(conn, res, callback)
 	local ret, err = system_bus:call_finish(res);
 	local xml = ret.value[1];
-	local waiting_for = 0;
+
+	if err then
+		print(err);
+		return;
+	end
+
 	for device in string.gmatch(xml, 'name="([^"]*)"') do
 		devices[device] = {};
-		waiting_for = waiting_for + 1;
 	end
-	
+
 	system_bus:call(
 		'org.freedesktop.UDisks2',
 		'/org/freedesktop/UDisks2',
@@ -100,97 +104,43 @@ local function parse_block_devices(conn, res, callback)
 		function(conn, res)
 			local ret, err = system_bus:call_finish(res);
 			local value = ret.value[1];
-			if err == nil then
-				for device_name, _ in pairs(devices) do
-					local device = '/org/freedesktop/UDisks2/block_devices/' .. device_name;
-					if value[device] and value[device]['org.freedesktop.UDisks2.Filesystem'] then
-						devices[device_name] = {}
-						local device_data = {
-							OK = true,
-							Drive = value[device]['org.freedesktop.UDisks2.Block']['Drive'],
-							Device = device_name,
-						}
-						system_bus:call(
-							'org.freedesktop.UDisks2',
-							device_data.Drive,
-							'org.freedesktop.DBus.Properties',
-							'GetAll',
-							GLib.Variant.new_tuple({
-								GLib.Variant('s', 'org.freedesktop.UDisks2.Drive')
-							}, 1),
-							nil,
-							Gio.DBusConnectionFlags.NONE,
-							-1,
-							nil,
-							function(conn, res)
-								local ret, err = system_bus:call_finish(res);
-								if err == nil then
-									local value = ret.value[1];
-									device_data.ConnectionBus = value.ConnectionBus;
-									device_data.Removable = value.Removable;
-									device_data.Name = '';
-									if not isempty(value.Vendor) then
-										device_data.Name = value.Vendor .. ' ';
-									end
-									if not isempty(value.Model) then
-										device_data.Name = device_data.Name .. value.Model;
-									end
-
-									system_bus:call(
-										'org.freedesktop.UDisks2',
-										device,
-										'org.freedesktop.DBus.Properties',
-										'GetAll',
-										GLib.Variant.new_tuple({
-											GLib.Variant('s', 'org.freedesktop.UDisks2.Filesystem')
-										}, 1),
-										nil,
-										Gio.DBusConnectionFlags.NONE,
-										-1,
-										nil,
-										function(conn, res)
-											local ret, err = system_bus:call_finish(res);
-											if err == nil then
-												local value = ret.value[1];
-												if value.MountPoints[1] == nil then
-													device_data.Mounted = false;
-												else
-													device_data.Mounted = tostring(value.MountPoints[1]);
-												end
-												devices[device_name] = device_data;
-											else
-												print(err);
-											end
-
-											waiting_for = waiting_for - 1;
-											if waiting_for == 0 then
-												callback(devices);
-											end
-										end
-									);
-
-
-								else
-									print(err);
-									waiting_for = waiting_for - 1;
-									if waiting_for == 0 then
-										callback(devices);
-									end
-								end
-							end
-						)
-					else
-						devices[device_name] = nil;
-						waiting_for = waiting_for - 1;
-						if waiting_for == 0 then
-							callback(devices);
-						end
-					end
-				end
-			else
+			if err then
 				print(err)
 				callback(devices);
+				return
 			end
+
+			for device_name, _ in pairs(devices) do
+				local device_path = '/org/freedesktop/UDisks2/block_devices/' .. device_name;
+				local device = value[device_path];
+				if device and device['org.freedesktop.UDisks2.Filesystem'] and device['org.freedesktop.UDisks2.Partition'] then
+					local mounted = device['org.freedesktop.UDisks2.Filesystem']['MountPoints'][1]
+					local drive = value[device['org.freedesktop.UDisks2.Block']['Drive']]['org.freedesktop.UDisks2.Drive'];
+					if mounted == nil then
+						mounted = false
+					else
+						mounted = tostring(mounted)
+					end
+					devices[device_name] = {
+						OK = true,
+						Drive = device['org.freedesktop.UDisks2.Block'].Drive,
+						Device = device_name,
+						Mounted = mounted,
+						Removable = drive.Removable,
+						Name = '',
+						ConnectionBus = drive.ConnectionBus,
+					}
+					if not isempty(drive.Vendor) then
+						devices[device_name].Name = drive.Vendor .. ' ';
+					end
+					if not isempty(drive.Model) then
+						devices[device_name].Name = devices[device_name].Name .. drive.Model;
+					end
+				else
+					devices[device_name] = nil;
+				end
+			end
+			callback(devices);
 		end
 	);
 end
@@ -217,7 +167,7 @@ end
 local function scan_finished(devices)
 	devices_layout:reset();
 	for device, data in pairs(devices) do
-		if data.Removable then
+		if data.Removable and data.OK then
 			local bus_type = data.ConnectionBus;
 			local status = 'unmounted';
 			local icon_name = '';
