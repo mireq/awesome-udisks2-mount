@@ -19,9 +19,19 @@ local function isempty(s)
 end
 
 
+local function open_filemanger(device)
+	if module.filemanager == nil then
+	else
+		awful.util.spawn_with_shell(module.filemanager .. ' "' .. device.Mounted .. '"');
+	end
+end
+
+
 local function mount_device(device)
-	if not device.Mounted then
-		ret, err = system_bus:call_sync(
+	if device.Mounted then
+		open_filemanger(device);
+	else
+		ret, err = system_bus:call(
 			'org.freedesktop.UDisks2',
 			'/org/freedesktop/UDisks2/block_devices/' .. device.Device,
 			'org.freedesktop.UDisks2.Filesystem',
@@ -32,29 +42,28 @@ local function mount_device(device)
 			nil,
 			Gio.DBusConnectionFlags.NONE,
 			-1,
-			nil
+			nil,
+			function(conn, res)
+				local ret, err = system_bus:call_finish(res);
+				if err then
+					naughty.notify({
+						preset = naughty.config.presets.critical,
+						text = tostring(err),
+					});
+				else
+					device.Mounted = tostring(ret.value[1]);
+					open_filemanger(device);
+				end
+			end
 		);
-
-		if err then
-			naughty.notify({
-				preset = naughty.config.presets.critical,
-				text = tostring(err),
-			});
-		else
-			device.Mounted = tostring(ret.value[1]);
-		end
 	end
 
-	if module.filemanager == nil then
-	else
-		awful.util.spawn_with_shell(module.filemanager .. ' "' .. device.Mounted .. '"');
-	end
 end
 
 
 local function unmount_device(device)
 	if device.Mounted then
-		ret, err = system_bus:call_sync(
+		ret, err = system_bus:call(
 			'org.freedesktop.UDisks2',
 			'/org/freedesktop/UDisks2/block_devices/' .. device.Device,
 			'org.freedesktop.UDisks2.Filesystem',
@@ -65,15 +74,17 @@ local function unmount_device(device)
 			nil,
 			Gio.DBusConnectionFlags.NONE,
 			-1,
-			nil
+			nil,
+			function(conn, res)
+				local ret, err = system_bus:call_finish(res);
+				if err then
+					naughty.notify({
+						preset = naughty.config.presets.critical,
+						text = tostring(err),
+					});
+				end
+			end
 		);
-
-		if err then
-			naughty.notify({
-				preset = naughty.config.presets.critical,
-				text = tostring(err),
-			});
-		end
 	end
 end
 
