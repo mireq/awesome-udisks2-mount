@@ -12,7 +12,7 @@ rc.lua:
     udisks = require("udisks")
     udisks.filemanager = "konqueror"
     ...
-    right_layout:add(udisks.widget
+    right_layout:add(udisks.widget)
 
 
 theme.lua:
