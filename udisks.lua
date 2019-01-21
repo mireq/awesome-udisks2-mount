@@ -124,7 +124,7 @@ local function parse_block_devices(conn, res, callback)
 			for device_name, _ in pairs(devices) do
 				local device_path = '/org/freedesktop/UDisks2/block_devices/' .. device_name;
 				local device = value[device_path];
-				if device and device['org.freedesktop.UDisks2.Filesystem'] and device['org.freedesktop.UDisks2.Partition'] then
+				if device and device['org.freedesktop.UDisks2.Filesystem'] and value[device['org.freedesktop.UDisks2.Block']['Drive']] then
 					local mounted = device['org.freedesktop.UDisks2.Filesystem']['MountPoints'][1]
 					local drive = value[device['org.freedesktop.UDisks2.Block']['Drive']]['org.freedesktop.UDisks2.Drive'];
 					if mounted == nil then
