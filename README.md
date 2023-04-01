@@ -168,6 +168,20 @@ or background:
     theme.udisks_bg = '#0000ff'
     theme.udisks_bg_mounted = '#ff0000'
 
+## Device manager API
+
+Current drives and devices are available using
+`udisks_mount.device_manager.(drives|block_devices)`.
+
+Change monitoring is supported using signals:
+
+    udisks_mount.device_manager:connect_signal('drive_created', function(self, d) print("device_created " .. d.new.Model); end)
+    udisks_mount.device_manager:connect_signal('drive_removed', function(self, d) print("device_removed " .. d.old.Model); end)
+    udisks_mount.device_manager:connect_signal('drive_changed', function(self, d) print("device_changed " .. d.new.Model); end)
+    udisks_mount.device_manager:connect_signal('block_device_created', function(self, d) print("device_created " .. udisks_mount.get_name(d.new)); end)
+    udisks_mount.device_manager:connect_signal('block_device_removed', function(self, d) print("device_removed " .. udisks_mount.get_name(d.old)); end)
+    udisks_mount.device_manager:connect_signal('block_device_changed', function(self, d) print("device_changed " .. udisks_mount.get_name(d.new)); end)
+
 ## Screenshot
 
 ![Screenshot](https://raw.github.com/wiki/mireq/awesome-udisks2-mount/automount.gif?v=2023-04-01)
