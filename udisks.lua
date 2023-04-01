@@ -469,7 +469,9 @@ end
 function udisks_mount_widget.get_name(device)
 	local text = device['HintName']
 	if not text or text == '' then
-		text = device['Drive']['Serial']
+		if device['Drive'] ~= nil then
+			text = device['Drive']['Serial']
+		end
 		if device['IdLabel'] and device['IdLabel'] ~= '' then
 			text = text .. " " .. device['IdLabel']
 		else
