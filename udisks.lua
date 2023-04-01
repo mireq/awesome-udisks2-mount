@@ -23,6 +23,12 @@ device_manager.drives = {}
 device_manager.block_devices = {}
 
 
+local function script_dir()
+	local str = debug.getinfo(2, "S").source:sub(2)
+	return str:match("(.*/)")
+end
+
+
 local function object_changed(a, b)
 	for key, value in pairs(a) do
 		if value ~= b[key] and key ~= 'Drive' then
@@ -319,6 +325,15 @@ local function widget_name(device, args, tb)
 	local text = udisks_mount_widget.get_name(device)
 	local bg_color = theme[prefix .. 'bg' .. suffix]
 	local bg_image = theme[prefix .. 'image' .. suffix]
+
+	if final_icon == nil then
+		if icon_name == 'thumb' or device['Drive']['ConnectionBus'] == 'usb' then
+			icon_name = 'thumb'
+		else
+			icon_name = 'storage'
+		end
+		final_icon = script_dir() .. '/icons/' .. icon_name .. '.svg'
+	end
 
 	return text, bg_color, bg_image, final_icon, {}
 end
