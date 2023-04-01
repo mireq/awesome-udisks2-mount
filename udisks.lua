@@ -47,7 +47,7 @@ local function update_list(old, new, cb_create, cb_remove, cb_change)
 	for path, info in pairs(new) do
 		if old[path] == nil then
 			old[path] = info
-			cb_create(path, new)
+			cb_create(path, info)
 		else
 			table.insert(to_check, path)
 		end
