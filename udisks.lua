@@ -256,12 +256,12 @@ local function default_template(w)
 		update_common = function(self, device, index, objects)
 			local icon = self:get_children_by_id('icon_role')[1]
 			if icon ~= nil then
-				local opacity = 1
-				if not device['Mounted']  then
-					opacity = beautiful.udisks_umounted_opacity
-					if opacity == nil then
-						opacity = 1
-					end
+				local opacity = beautiful.udisks_opacity
+				if device['Mounted']  then
+					opacity = beautiful.udisks_opacity_mounted
+				end
+				if opacity == nil then
+					opacity = 1
 				end
 				icon:set_opacity(opacity)
 			end
