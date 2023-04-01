@@ -494,7 +494,7 @@ local function new(args)
 		buttons = args.buttons,
 		update_function = args.update_function,
 		widget_template = args.widget_template,
-		filter = udisks_mount_widget.filter.removable,
+		filter = args.filter or udisks_mount_widget.filter.removable,
 		screen = screen
 	})
 
