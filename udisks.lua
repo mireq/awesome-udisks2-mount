@@ -235,21 +235,6 @@ local function register_listeners()
 end
 
 
-local cancellable = Gio.Cancellable()
-Gio.bus_get(
-	Gio.BusType.SYSTEM,
-	cancellable,
-	function (object, result)
-		local connection, err = Gio.bus_get_finish(result)
-		if err then
-			print(tostring(err))
-		else
-			system_bus = connection
-			register_listeners()
-		end
-	end
-)
-
 local udisks_mount_widget = { mt = {} }
 
 local function get_screen(s)
@@ -543,6 +528,23 @@ end
 
 function udisks_mount_widget.mt:__call(...)
 	return new(...)
+end
+
+
+function udisks_mount_widget.start_monitor()
+	Gio.bus_get(
+		Gio.BusType.SYSTEM,
+		Gio.Cancellable(),
+		function (object, result)
+			local connection, err = Gio.bus_get_finish(result)
+			if err then
+				print(tostring(err))
+			else
+				system_bus = connection
+				register_listeners()
+			end
+		end
+	)
 end
 
 
