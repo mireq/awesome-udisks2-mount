@@ -374,7 +374,9 @@ end
 
 function udisks_mount_widget.mount(device, cb)
 	if device['Mounted'] then
-		cb(device["Mounted"], device, nil)
+		if cb ~= nil then
+			cb(device["Mounted"], device, nil)
+		end
 	else
 		system_bus:call(
 			'org.freedesktop.UDisks2',
@@ -426,7 +428,9 @@ function udisks_mount_widget.unmount(device, cb)
 			end
 		)
 	else
-		cb(nil, device, "Device not mounted")
+		if cb ~= nil then
+			cb(nil, device, "Device not mounted")
+		end
 	end
 end
 
